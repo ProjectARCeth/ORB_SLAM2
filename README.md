@@ -85,25 +85,25 @@ First you should unpack the Vocabulary in ORB_SLAM2/Examples/ROS/orb_slam2/Vocab
 3. Since the package is catkinized just run:
 
   ```
-  catkin build orb_slam2
+  catkin build ORB_SLAM2
   ```
 
 4. For a monocular input from topic `/camera/image_raw` run node orb_slam2/mono. You will need to provide the vocabulary file and a settings file. See the monocular examples above.
 
   ```
-  rosrun orb_slam2 mono PATH_TO_VOCABULARY PATH_TO_SETTINGS_FILE
+  rosrun ORB_SLAM2 mono PATH_TO_VOCABULARY PATH_TO_SETTINGS_FILE
   ```
 
 5. For a stereo input from topics `/camera/left/image_raw` and `/camera/right/image_raw` run node orb_slam2/stereo. You will need to provide the vocabulary file and a settings file. See the stereo examples above.
 
   ```
-  rosrun orb_slam2 stereo PATH_TO_VOCABULARY PATH_TO_SETTINGS_FILE
+  rosrun ORB_SLAM2 stereo PATH_TO_VOCABULARY PATH_TO_SETTINGS_FILE
   ```
 
 6. For an RGB-D input from topics `/camera/rgb/image_raw` and `/camera/depth_registered/image_raw`, run node orb_slam2/rgbd. You will need to provide the vocabulary file and a settings file. See the RGB-D example above.
 
   ```
-  rosrun orb_slam2 rgbd PATH_TO_VOCABULARY PATH_TO_SETTINGS_FILE
+  rosrun ORB_SLAM2 rgbd PATH_TO_VOCABULARY PATH_TO_SETTINGS_FILE
   ```
 
 #4.2 Properties when modifying:
@@ -115,7 +115,7 @@ If you change standart files which are not in Examples/ROS/orb_slam2 then in ord
 
 Else if you change something in Examples/ROS/orb_slam2 then you apply the changes with:
   ```
-  catkin build orb_slam2
+  catkin build ORB_SLAM2
   ```
 
 #5. Monocular Examples
