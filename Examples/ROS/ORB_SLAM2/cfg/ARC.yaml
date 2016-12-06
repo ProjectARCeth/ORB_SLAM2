@@ -40,7 +40,7 @@ LEFT.D: !!opencv-matrix
    rows: 1
    cols: 5
    dt: d
-   data:[0.303422, 0.099615, -0.000375, 0.000152, 0.000000]
+   data:[-0.303422, 0.099615, -0.000375, 0.000152, 0.000000]
 LEFT.K: !!opencv-matrix
    rows: 3
    cols: 3
