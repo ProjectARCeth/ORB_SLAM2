@@ -172,7 +172,8 @@ cv::Mat Sim3Solver::iterate(int nIterations, bool &bNoMore, vector<bool> &vbInli
             mvX3Dc1[idx].copyTo(P3Dc1i.col(i));
             mvX3Dc2[idx].copyTo(P3Dc2i.col(i));
 
-            vAvailableIndices[randi] = vAvailableIndices.back();
+            //vAvailableIndices[randi] = vAvailableIndices.back(); //RAUL
+            vAvailableIndices[idx] = vAvailableIndices.back(); //PLNEGRE
             vAvailableIndices.pop_back();
         }
 

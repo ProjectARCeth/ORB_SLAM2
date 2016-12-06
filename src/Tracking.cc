@@ -43,9 +43,11 @@ using namespace std;
 namespace ORB_SLAM2
 {
 
-Tracking::Tracking(System *pSys, ORBVocabulary* pVoc, FrameDrawer *pFrameDrawer, MapDrawer *pMapDrawer, Map *pMap, KeyFrameDatabase* pKFDB, const string &strSettingPath, const int sensor):
+//Tracking::Tracking(System *pSys, ORBVocabulary* pVoc, FrameDrawer *pFrameDrawer, MapDrawer *pMapDrawer, Map *pMap, KeyFrameDatabase* pKFDB, const string &strSettingPath, const int sensor): //RAUL
+Tracking::Tracking(ORBVocabulary* pVoc, FrameDrawer *pFrameDrawer, MapDrawer *pMapDrawer, Map *pMap, KeyFrameDatabase* pKFDB, const string &strSettingPath, const int sensor):
     mState(NO_IMAGES_YET), mSensor(sensor), mbOnlyTracking(false), mbVO(false), mpORBVocabulary(pVoc),
-    mpKeyFrameDB(pKFDB), mpInitializer(static_cast<Initializer*>(NULL)), mpSystem(pSys),
+    //mpKeyFrameDB(pKFDB), mpInitializer(static_cast<Initializer*>(NULL)), mpSystem(pSys), //RAUL
+    mpKeyFrameDB(pKFDB), mpInitializer(static_cast<Initializer*>(NULL)),
     mpFrameDrawer(pFrameDrawer), mpMapDrawer(pMapDrawer), mpMap(pMap), mnLastRelocFrameId(0)
 {
     // Load camera parameters from settings file
@@ -140,7 +142,8 @@ Tracking::Tracking(System *pSys, ORBVocabulary* pVoc, FrameDrawer *pFrameDrawer,
     if(sensor==System::RGBD)
     {
         mDepthMapFactor = fSettings["DepthMapFactor"];
-        if(fabs(mDepthMapFactor)<1e-5)
+        //if(fabs(mDepthMapFactor)<1e-5) //RAUL
+        if(mDepthMapFactor==0)		
             mDepthMapFactor=1;
         else
             mDepthMapFactor = 1.0f/mDepthMapFactor;
@@ -224,7 +227,8 @@ cv::Mat Tracking::GrabImageRGBD(const cv::Mat &imRGB,const cv::Mat &imD, const d
             cvtColor(mImGray,mImGray,CV_BGRA2GRAY);
     }
 
-    if((fabs(mDepthMapFactor-1.0f)>1e-5) || imDepth.type()!=CV_32F)
+    //if((fabs(mDepthMapFactor-1.0f)>1e-5) || imDepth.type()!=CV_32F) //RAUL
+    if(mDepthMapFactor!=1 || imDepth.type()!=CV_32F)
         imDepth.convertTo(imDepth,CV_32F,mDepthMapFactor);
 
     mCurrentFrame = Frame(mImGray,imDepth,timestamp,mpORBextractorLeft,mpORBVocabulary,mK,mDistCoef,mbf,mThDepth);
@@ -474,7 +478,8 @@ void Tracking::Track()
             if(mpMap->KeyFramesInMap()<=5)
             {
                 cout << "Track lost soon after initialisation, reseting..." << endl;
-                mpSystem->Reset();
+                //mpSystem->Reset(); //RAUL
+                Reset();
                 return;
             }
         }
@@ -806,7 +811,8 @@ void Tracking::UpdateLastFrame()
 
     mLastFrame.SetPose(Tlr*pRef->GetPose());
 
-    if(mnLastKeyFrameId==mLastFrame.mnId || mSensor==System::MONOCULAR || !mbOnlyTracking)
+    //if(mnLastKeyFrameId==mLastFrame.mnId || mSensor==System::MONOCULAR || !mbOnlyTracking) //RAUL
+    if(mnLastKeyFrameId==mLastFrame.mnId || mSensor==System::MONOCULAR)
         return;
 
     // Create "visual odometry" MapPoints
@@ -999,23 +1005,45 @@ bool Tracking::NeedNewKeyFrame()
     bool bLocalMappingIdle = mpLocalMapper->AcceptKeyFrames();
 
     // Check how many "close" points are being tracked and how many could be potentially created.
-    int nNonTrackedClose = 0;
-    int nTrackedClose= 0;
+//    int nNonTrackedClose = 0; //RAUL
+//    int nTrackedClose= 0; //RAUL
+    
+    // Stereo & RGB-D: Ratio of close "matches to map"/"total matches" //PLNEGRE
+    // "total matches = matches to map + visual odometry matches"
+    // Visual odometry matches will become MapPoints if we insert a keyframe.
+    // This ratio measures how many MapPoints we could create if we insert a keyframe.
+    int nMap = 0;		
+    int nTotal= 0;
+    
+    
     if(mSensor!=System::MONOCULAR)
     {
         for(int i =0; i<mCurrentFrame.N; i++)
         {
             if(mCurrentFrame.mvDepth[i]>0 && mCurrentFrame.mvDepth[i]<mThDepth)
             {
-                if(mCurrentFrame.mvpMapPoints[i] && !mCurrentFrame.mvbOutlier[i])
-                    nTrackedClose++;
-                else
-                    nNonTrackedClose++;
+//                if(mCurrentFrame.mvpMapPoints[i] && !mCurrentFrame.mvbOutlier[i]) //RAUL
+//                    nTrackedClose++;
+//                else
+//                    nNonTrackedClose++;
+            	
+            	 nTotal++;
+            	 if(mCurrentFrame.mvpMapPoints[i])
+            		 if(mCurrentFrame.mvpMapPoints[i]->Observations()>0)
+            			 nMap++;
+            	
             }
         }
     }
-
-    bool bNeedToInsertClose = (nTrackedClose<100) && (nNonTrackedClose>70);
+    else //PLNEGRE 
+    {		
+           // There are no visual odometry matches in the monocular case		
+           nMap=1;		
+           nTotal=1;		
+       }
+    
+    //bool bNeedToInsertClose = (nTrackedClose<100) && (nNonTrackedClose>70); //RAUL
+    const float ratioMap = (float)nMap/fmax(1.0f,nTotal); //PLNEGRE		
 
     // Thresholds
     float thRefRatio = 0.75f;
@@ -1025,14 +1053,21 @@ bool Tracking::NeedNewKeyFrame()
     if(mSensor==System::MONOCULAR)
         thRefRatio = 0.9f;
 
+   float thMapRatio = 0.35f; //PLNEGRE		
+       if(mnMatchesInliers>300)	//PLNEGRE		
+           thMapRatio = 0.20f;	//PLNEGRE		
+   		
+    
     // Condition 1a: More than "MaxFrames" have passed from last keyframe insertion
     const bool c1a = mCurrentFrame.mnId>=mnLastKeyFrameId+mMaxFrames;
     // Condition 1b: More than "MinFrames" have passed and Local Mapping is idle
     const bool c1b = (mCurrentFrame.mnId>=mnLastKeyFrameId+mMinFrames && bLocalMappingIdle);
     //Condition 1c: tracking is weak
-    const bool c1c =  mSensor!=System::MONOCULAR && (mnMatchesInliers<nRefMatches*0.25 || bNeedToInsertClose) ;
+    //const bool c1c =  mSensor!=System::MONOCULAR && (mnMatchesInliers<nRefMatches*0.25 || bNeedToInsertClose) ; //RAUL
+    const bool c1c =  mSensor!=System::MONOCULAR && (mnMatchesInliers<nRefMatches*0.25 || ratioMap<0.3f) ;
     // Condition 2: Few tracked points compared to reference keyframe. Lots of visual odometry compared to map matches.
-    const bool c2 = ((mnMatchesInliers<nRefMatches*thRefRatio|| bNeedToInsertClose) && mnMatchesInliers>15);
+    //const bool c2 = ((mnMatchesInliers<nRefMatches*thRefRatio|| bNeedToInsertClose) && mnMatchesInliers>15); //RAUL
+    const bool c2 = ((mnMatchesInliers<nRefMatches*thRefRatio|| ratioMap<thMapRatio) && mnMatchesInliers>15);
 
     if((c1a||c1b||c1c)&&c2)
     {

@@ -382,40 +382,42 @@ float MapPoint::GetMaxDistanceInvariance()
     return 1.2f*mfMaxDistance;
 }
 
-int MapPoint::PredictScale(const float &currentDist, KeyFrame* pKF)
+//int MapPoint::PredictScale(const float &currentDist, KeyFrame* pKF) //RAUL
+int MapPoint::PredictScale(const float &currentDist, const float &logScaleFactor) //PLNEGRE
 {
     float ratio;
     {
-        unique_lock<mutex> lock(mMutexPos);
+        unique_lock<mutex> lock3(mMutexPos); //RAUL used lock
         ratio = mfMaxDistance/currentDist;
     }
 
-    int nScale = ceil(log(ratio)/pKF->mfLogScaleFactor);
-    if(nScale<0)
-        nScale = 0;
-    else if(nScale>=pKF->mnScaleLevels)
-        nScale = pKF->mnScaleLevels-1;
-
-    return nScale;
+//    int nScale = ceil(log(ratio)/pKF->mfLogScaleFactor); //RAUL
+//    if(nScale<0)
+//        nScale = 0;
+//    else if(nScale>=pKF->mnScaleLevels)
+//        nScale = pKF->mnScaleLevels-1;
+//
+//    return nScale;
+    return ceil(log(ratio)/logScaleFactor); //PLNEGRE
 }
 
-int MapPoint::PredictScale(const float &currentDist, Frame* pF)
-{
-    float ratio;
-    {
-        unique_lock<mutex> lock(mMutexPos);
-        ratio = mfMaxDistance/currentDist;
-    }
-
-    int nScale = ceil(log(ratio)/pF->mfLogScaleFactor);
-    if(nScale<0)
-        nScale = 0;
-    else if(nScale>=pF->mnScaleLevels)
-        nScale = pF->mnScaleLevels-1;
-
-    return nScale;
-}
-
+//int MapPoint::PredictScale(const float &currentDist, Frame* pF) //RAUL
+//{
+//    float ratio;
+//    {
+//        unique_lock<mutex> lock(mMutexPos);
+//        ratio = mfMaxDistance/currentDist;
+//    }
+//
+//    int nScale = ceil(log(ratio)/pF->mfLogScaleFactor);
+//    if(nScale<0)
+//        nScale = 0;
+//    else if(nScale>=pF->mnScaleLevels)
+//        nScale = pF->mnScaleLevels-1;
+//
+//    return nScale;
+//}
+//
 
 
 } //namespace ORB_SLAM
