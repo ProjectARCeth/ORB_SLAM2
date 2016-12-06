@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 2.8.3)
 
-project(orb_slam2)
+project(ORB_SLAM2)
 find_package(catkin REQUIRED COMPONENTS
   roscpp
   sensor_msgs
@@ -54,29 +54,29 @@ ${PROJECT_SOURCE_DIR}/../../../lib/libORB_SLAM2.so
 )
 
 # Node for monocular camera
-add_executable(mono
+add_executable(Mono
 src/ros_mono.cc
 )
 
-target_link_libraries(mono
+target_link_libraries(Mono
 ${LIBS}
 )
 
 # Node for RGB-D camera
-add_executable(rgbd
+add_executable(Rgbd
 src/ros_rgbd.cc
 )
 
-target_link_libraries(rgbd
+target_link_libraries(Rgbd
 ${LIBS}
 )
 
 # Node for stereo camera
-add_executable(stereo
+add_executable(Stereo
 src/ros_stereo.cc
 )
 
-target_link_libraries(stereo
+target_link_libraries(Stereo
 ${LIBS}
 )
 
