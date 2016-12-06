@@ -44,8 +44,8 @@ public:
     void GrabStereo(const sensor_msgs::ImageConstPtr& msgLeft,const sensor_msgs::ImageConstPtr& msgRight);
 
     ORB_SLAM2::System* mpSLAM;
-    bool do_rectify;
-    cv::Mat M1l,M2l,M1r,M2r;
+    bool do_rectify; //RAUL; the catknized version does not use this parameter
+    cv::Mat M1l,M2l,M1r,M2r; //RAUL
 };
 
 int main(int argc, char **argv)
@@ -65,10 +65,10 @@ int main(int argc, char **argv)
 
     ImageGrabber igb(&SLAM);
 
-    stringstream ss(argv[3]);
-	ss >> boolalpha >> igb.do_rectify;
+    stringstream ss(argv[3]); //RAUL
+	ss >> boolalpha >> igb.do_rectify; //RAUL
 
-    if(igb.do_rectify)
+    if(igb.do_rectify) //CATKINIZED DOES NOT USE THIS -> just set this to false!!!
     {      
         // Load settings related to stereo calibration
         cv::FileStorage fsSettings(argv[2], cv::FileStorage::READ);
@@ -133,20 +133,10 @@ int main(int argc, char **argv)
 void ImageGrabber::GrabStereo(const sensor_msgs::ImageConstPtr& msgLeft,const sensor_msgs::ImageConstPtr& msgRight)
 {
     // Copy the ros image message to cv::Mat.
-    cv_bridge::CvImageConstPtr cv_ptrLeft;
+    cv_bridge::CvImageConstPtr cv_ptrLeft,cv_ptrRight;
     try
     {
         cv_ptrLeft = cv_bridge::toCvShare(msgLeft);
-    }
-    catch (cv_bridge::Exception& e)
-    {
-        ROS_ERROR("cv_bridge exception: %s", e.what());
-        return;
-    }
-
-    cv_bridge::CvImageConstPtr cv_ptrRight;
-    try
-    {
         cv_ptrRight = cv_bridge::toCvShare(msgRight);
     }
     catch (cv_bridge::Exception& e)
